@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NAI Gate 管理后台</title>
+<style>
+:root{
+  --bg:#0f151d; --panel:#161e29; --panel2:#1b2533; --line:#243043;
+  --txt:#dbe4f0; --muted:#8496ad; --accent:#7cc4ff; --accent2:#8be2b9;
+  --warn:#ffb26b; --bad:#ff8a8a;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+     background:var(--bg);color:var(--txt);font-size:14px}
+button{font-family:inherit}
+a{color:var(--accent)}
+input,select,textarea{background:#101823;border:1px solid var(--line);color:var(--txt);
+  border-radius:8px;padding:8px 10px;font-size:14px;outline:none;width:100%}
+input:focus,textarea:focus{border-color:var(--accent)}
+label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+
+/* login */
+#login{display:flex;align-items:center;justify-content:center;height:100vh}
+.login-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:32px;width:340px}
+.login-card h1{font-size:18px;margin:0 0 18px;color:var(--accent)}
+
+/* layout */
+#app{display:none;min-height:100vh}
+header{display:flex;align-items:center;gap:16px;padding:14px 22px;border-bottom:1px solid var(--line);
+  background:var(--panel);position:sticky;top:0;z-index:5}
+header .logo{font-weight:700;color:var(--accent);font-size:16px}
+header .sp{flex:1}
+.tabs{display:flex;gap:4px}
+.tabs button{background:none;border:none;color:var(--muted);padding:8px 14px;border-radius:8px;cursor:pointer;font-size:14px}
+.tabs button.active{background:var(--panel2);color:var(--txt)}
+main{max-width:1080px;margin:0 auto;padding:22px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.card .k{font-size:12px;color:var(--muted)}
+.card .v{font-size:22px;font-weight:700;margin-top:4px}
+.card .v small{font-size:12px;color:var(--muted);font-weight:400}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:18px}
+.panel h2{font-size:14px;margin:0 0 12px;color:var(--muted);font-weight:600}
+
+/* table */
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:500;font-size:12px;white-space:nowrap}
+tr:hover td{background:#182230}
+.tag{display:inline-block;padding:1px 8px;border-radius:20px;font-size:12px}
+.tag.on{background:#173529;color:var(--accent2)}
+.tag.off{background:#3a2226;color:var(--bad)}
+.tag.warn{background:#3a2f1c;color:var(--warn)}
+.btn{background:var(--panel2);border:1px solid var(--line);color:var(--txt);
+  padding:6px 12px;border-radius:8px;cursor:pointer;font-size:13px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:#1c4d74;border-color:#2a6ea3}
+.btn.danger{background:#5b2530;border-color:#7c3644}
+.btn.mini{padding:3px 8px;font-size:12px}
+.row-actions{display:flex;gap:6px;flex-wrap:wrap}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
+
+/* chart */
+.chart{display:flex;align-items:flex-end;gap:10px;height:120px;padding-top:8px}
+.chart .bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
+.chart .bar .fill{width:70%;background:linear-gradient(180deg,#7cc4ff,#2a6ea3);border-radius:6px 6px 0 0;min-height:2px}
+.chart .bar .lb{font-size:11px;color:var(--muted)}
+
+/* modal */
+#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:50;
+  align-items:center;justify-content:center}
+.modal-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:24px;width:440px;max-height:90vh;overflow:auto}
+.modal-card h3{margin:0 0 8px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.check{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px}
+.check input{width:auto}
+.modal-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.err{color:var(--bad);font-size:13px;margin-top:10px;min-height:18px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1c4d74;
+  color:#fff;padding:10px 18px;border-radius:10px;z-index:99;display:none}
+.muted{color:var(--muted)}
+.logs td{font-size:12.5px}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.gallery-item{background:var(--panel2);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.gallery-item img{display:block;width:100%;height:180px;object-fit:contain;background:#0b1017}
+.gallery-meta{padding:9px;font-size:12px;line-height:1.65;word-break:break-all}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="login-card">
+    <h1>NAI Gate 管理后台</h1>
+    <label>管理密码</label>
+    <input id="pwd" type="password" placeholder="ADMIN_PASSWORD" onkeydown="if(event.key==='Enter')doLogin()">
+    <div class="err" id="loginErr"></div>
+    <button class="btn primary" style="width:100%" onclick="doLogin()">登录</button>
+  </div>
+</div>
+
+<div id="app">
+<header>
+  <span class="logo">NAI Gate</span>
+  <nav class="tabs">
+    <button data-tab="ov" class="active" onclick="tab('ov')">总览</button>
+    <button data-tab="keys" onclick="tab('keys')">密钥管理</button>
+    <button data-tab="logs" onclick="tab('logs')">用量日志</button>
+    <button data-tab="set" onclick="tab('set')">设置</button>
+  </nav>
+  <span class="sp"></span>
+  <button class="btn" onclick="logout()">退出</button>
+</header>
+<main>
+
+  <!-- 总览 -->
+  <section id="tab-ov">
+    <div class="cards" id="ovCards"></div>
+    <div class="panel"><h2>近 7 天生成量（图片）</h2><div class="chart" id="chart"></div></div>
+    <div class="panel"><h2>上游 NovelAI 令牌池</h2><div id="pool"></div></div>
+  </section>
+
+  <!-- 密钥 -->
+  <section id="tab-keys" style="display:none">
+    <div class="panel">
+      <div style="display:flex;align-items:center;margin-bottom:12px">
+        <h2 style="margin:0;flex:1">虚拟 Key</h2>
+        <button class="btn primary" onclick="openCreate()">＋ 新建 Key</button>
+        <button class="btn" style="margin-left:8px" onclick="loadKeys()">刷新</button>
+      </div>
+      <div style="overflow-x:auto">
+      <table id="keysTable">
+        <thead><tr>
+          <th>名称</th><th>Key</th><th>状态</th>
+          <th>今日用量</th><th>模型与配额</th><th>RPM</th><th>到期</th><th>操作</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 日志 -->
+  <section id="tab-logs" style="display:none">
+    <div class="panel">
+      <div style="display:flex;align-items:center;margin-bottom:12px">
+        <h2 style="margin:0;flex:1">最近用量</h2>
+        <select id="logFilter" style="width:180px" onchange="logPage=1;loadLogs()"><option value="">全部 Key</option></select>
+        <button class="btn" style="margin-left:8px" onclick="loadLogs()">刷新</button>
+      </div>
+      <div style="overflow-x:auto">
+      <table class="logs">
+        <thead><tr><th>时间</th><th>Key</th><th>类型</th><th>模型</th><th>状态</th>
+          <th>图</th><th>Anlas</th><th>tokens</th><th>备注</th></tr></thead>
+        <tbody id="logBody"></tbody>
+      </table>
+      </div>
+      <div id="logPager" style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:12px"></div>
+    </div>
+  </section>
+
+  <!-- 设置 -->
+  <section id="tab-set" style="display:none">
+    <div class="panel">
+      <h2>Anlas 预算</h2>
+      <label>全站月度 Anlas 预算（0 = 不限。Opus Anlas 每月账单日回满到 10000、不叠加，建议留 20~30% 余量）</label>
+      <div style="display:flex;gap:8px">
+        <input id="s_budget" type="number" value="10000">
+      </div>
+      <label>全站每日 V5 张数（0 = 不限。V5 周额度由 NovelAI 服务端按 ~190 张/天恢复，账户内所有人共享；此处镜像限制，默认 150 留安全边际）</label>
+      <div style="display:flex;gap:8px">
+        <input id="s_v5" type="number" value="150">
+        <button class="btn primary" style="white-space:nowrap" onclick="saveBudget()">保存</button>
+      </div>
+      <div class="muted" style="font-size:12px;margin-top:8px">V5 符合条件的单张（≤Normal/≤28步）走官方周额度不扣 Anlas；额度外的 V5 及大图按估算 Anlas 扣。每把 Key 还受自己的「每日 Anlas / 每月 Anlas / 每日 V5」限制。</div>
+    </div>
+    <div class="panel">
+      <h2>站点公告（用户访问首页看到的内容，支持 HTML）</h2>
+      <textarea id="announce" rows="10" placeholder="&lt;h2&gt;欢迎&lt;/h2&gt;&lt;p&gt;申请 Key 请联系……&lt;/p&gt;"></textarea>
+      <div style="margin-top:10px;text-align:right">
+        <button class="btn primary" onclick="saveAnnounce()">保存公告</button>
+      </div>
+    </div>
+    <div class="panel"><h2>服务端配置（只读，修改请编辑 .env 后重启）</h2><div id="cfgInfo" class="mono" style="font-size:12px;line-height:2"></div></div>
+  </section>
+
+</main>
+</div>
+
+<!-- 新建/编辑 key 弹窗 -->
+<div id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-card">
+    <h3 id="modalTitle">新建 Key</h3>
+    <label>名称 / 备注</label><input id="f_name" placeholder="例如：张三">
+    <label>图片模型范围</label>
+    <select id="f_image_model_scope">
+      <option value="legacy">仅 V4.5 及更低（默认）</option>
+      <option value="all">所有当前支持模型（含 V5）</option>
+    </select>
+    <div class="grid2">
+      <div><label>每日 Anlas 上限（0=不限）</label><input id="f_daily_anlas" type="number" value="100"></div>
+      <div><label>每月 Anlas 上限</label><input id="f_monthly_anlas" type="number" value="2500"></div>
+      <div><label>每日 V5 张数（走官方周额度，0=不限）</label><input id="f_daily_v5" type="number" value="50"></div>
+      <div><label>每日文本 tokens</label><input id="f_daily_text" type="number" value="150000"></div>
+      <div><label>每分钟请求数 (RPM)</label><input id="f_rpm" type="number" value="10"></div>
+      <div><label>有效天数（0=永久）</label><input id="f_expires" type="number" value="30"></div>
+    </div>
+    <div class="check"><input id="f_allow_anlas" type="checkbox"><span>允许消耗 Anlas（旧模型和 V5 的付费规格均受 日Anlas/月Anlas/全站预算 约束；不开启时仅允许免费档或 V5 额度规格）</span></div>
+    <div class="check"><input id="f_allow_img2img" type="checkbox"><span>允许 img2img / 局部重绘（需同时开启上面一项）</span></div>
+    <div class="check"><input id="f_exclude_global_v5" type="checkbox"><span>独立 V5 额度（此 Key 的 V5 使用不计入、也不受全站 V5 日额度限制）</span></div>
+    <div class="err" id="modalErr"></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal()">取消</button>
+      <button class="btn primary" id="modalSave" onclick="saveKey()">创建</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+let editingId = null, keysCache = [], logPage = 1;
+
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.style.display = 'block';
+  setTimeout(()=>t.style.display='none', 2200);
+}
+function esc(s){
+  return String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+async function api(path, opts={}){
+  const r = await fetch(path, {headers:{'Content-Type':'application/json'}, credentials:'same-origin', ...opts});
+  if(r.status === 401 && path !== '/admin/api/login'){ showLogin(); throw new Error('未登录'); }
+  const data = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(data.error?.message || data.detail || ('HTTP '+r.status));
+  return data;
+}
+
+/* ---------- auth ---------- */
+async function doLogin(){
+  try{
+    await api('/admin/api/login', {method:'POST', body: JSON.stringify({password: $('#pwd').value})});
+    boot();
+  }catch(e){ $('#loginErr').textContent = e.message; }
+}
+async function logout(){
+  await api('/admin/api/logout', {method:'POST'}).catch(()=>{});
+  showLogin();
+}
+function showLogin(){ $('#login').style.display='flex'; $('#app').style.display='none'; }
+async function boot(){
+  try{ await api('/admin/api/me'); }catch(e){ return; }
+  $('#login').style.display='none'; $('#app').style.display='block';
+  tab('ov');
+}
+
+/* ---------- tabs ---------- */
+function tab(name){
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+  ['ov','keys','logs','images','set'].forEach(t=> $('#tab-'+t).style.display = t===name?'':'none');
+  if(name==='ov') loadOverview();
+  if(name==='keys') loadKeys();
+  if(name==='logs') loadLogs();
+  if(name==='set') loadSettings();
+}
+
+/* ---------- overview ---------- */
+async function loadOverview(){
+  try{
+    const d = await api('/admin/api/overview');
+    const t = d.today;
+    $('#ovCards').innerHTML = `
+      <div class="card"><div class="k">今日生成图片</div><div class="v">${t.images} <small>张</small></div></div>
+      <div class="card"><div class="k">今日消耗 Anlas（估算）</div><div class="v">${t.anlas}</div></div>
+      <div class="card"><div class="k">今日 V5 张数 / 全站日限</div><div class="v">${t.v5||0} <small>/ ${d.v5_limit>0?d.v5_limit:'∞'}</small></div></div>
+      <div class="card"><div class="k">本月 Anlas / 全站预算</div><div class="v">${d.month.anlas} <small>/ ${d.anlas_budget>0?d.anlas_budget:'∞'}</small></div></div>
+      <div class="card"><div class="k">今日文本 tokens</div><div class="v">${fmt(t.text_tokens)}</div></div>
+      <div class="card"><div class="k">今日请求数</div><div class="v">${t.requests}</div></div>
+      <div class="card"><div class="k">Key 总数 / 有效</div><div class="v">${d.keys_total} <small>/ ${d.keys_active}</small></div></div>`;
+    const max = Math.max(1, ...d.week.map(w=>w.images));
+    $('#chart').innerHTML = d.week.map(w=>`
+      <div class="bar" title="${w.day}：${w.images} 张 / ${w.anlas}A / ${fmt(w.text_tokens)}tk">
+        <div class="lb">${w.images}</div>
+        <div class="fill" style="height:${Math.round(w.images/max*80)}%"></div>
+        <div class="lb">${w.day.slice(5)}</div>
+      </div>`).join('');
+    const pool = d.pool.length ? d.pool : [];
+    $('#pool').innerHTML = (!d.pool_configured)
+      ? `<span class="tag warn">未配置上游 Token —— 请设置环境变量 NAI_TOKENS 后重启</span>`
+      : pool.map(p=>`
+        <div style="padding:6px 0;border-bottom:1px solid var(--line)">
+          <span class="mono">${esc(p.token)}</span>
+          ${p.disabled ? '<span class="tag off">已失效(401)</span>'
+            : p.blocked_for>0 ? `<span class="tag warn">限流中 ${p.blocked_for}s</span>`
+            : '<span class="tag on">正常</span>'}
+          <span class="muted" style="margin-left:12px;font-size:12px">今日成功生成 ${p.images_today||0} 张；连续失败 ${p.fails}；Anlas ${p.allow_anlas?'允许':'禁止'}；V5 ${p.v5_daily_limit>0 ? `${p.v5_used}/${p.v5_daily_limit}/天` : '不限'}</span>
+        </div>`).join('');
+  }catch(e){ toast(e.message); }
+}
+function fmt(n){ n=+n||0; return n>=1e6? (n/1e6).toFixed(1)+'M' : n>=1e3? (n/1e3).toFixed(1)+'k' : n; }
+
+/* ---------- keys ---------- */
+async function loadKeys(){
+  try{
+    const d = await api('/admin/api/keys');
+    keysCache = d.keys;
+    const tb = $('#keysTable tbody');
+    tb.innerHTML = d.keys.map(k=>{
+      const exp = k.expires_at ? new Date(k.expires_at*1000).toLocaleDateString() : '永久';
+      return `<tr>
+        <td>${esc(k.name)}</td>
+        <td><span class="mono" data-tok="${esc(k.token)}">${mask(k.token)}</span><br>
+            <button class="btn mini" onclick="copyKey(this)">复制</button></td>
+        <td>${k.enabled?'<span class="tag on">启用</span>':'<span class="tag off">禁用</span>'}
+            ${k.allow_anlas?'<span class="tag warn">Anlas</span>':''}
+            ${k.is_admin?'<span class="tag on">站长</span>':''}
+            <span class="tag ${k.image_model_scope==='all'?'on':'off'}">${k.image_model_scope==='all'?'含 V5':'仅 V4.5↓'}</span>
+            ${k.allow_img2img?'<span class="tag warn">img2img</span>':''}</td>
+        <td>${k.used.images}图 / ${k.used.anlas}A / V5:${k.used.v5||0}<br><span class="muted">${fmt(k.used.text_tokens)}tk</span></td>
+        <td>${k.is_admin ? '站长 Key：单 Key 配额不限<br>模型：所有当前支持模型（含 V5）<br>Anlas：不限<br>文本：不限<br><span class="muted">仍受全站并发、图片间隔和上游 429 保护</span>' : `
+          模型：${k.image_model_scope==='all'?'所有当前支持模型（含 V5）':'仅 V4.5 及更低'}<br>
+          非 V5：不限张数<br>
+          V5：${k.image_model_scope==='all'?(k.daily_v5>0?k.daily_v5:'∞')+' 张/日':'不适用'}<br>
+          Anlas：${k.allow_anlas ? `日 ${k.daily_anlas>0?k.daily_anlas:'∞'} / 月 ${k.monthly_anlas>0?k.monthly_anlas:'∞'}` : '未开放'}<br>
+          文本：${fmt(k.daily_text_tokens)} tokens/日`}
+        </td>
+        <td>${k.rpm}</td>
+        <td>${exp}</td>
+        <td><div class="row-actions">
+          <button class="btn mini" onclick="openEdit(${k.id})">编辑</button>
+          <button class="btn mini" onclick="toggleKey(${k.id},${k.enabled?0:1})">${k.enabled?'禁用':'启用'}</button>
+          <button class="btn mini" onclick="resetDailyImageQuota(${k.id},'${esc(k.name)}')">重置今日额度</button>
+          <button class="btn mini danger" onclick="delKey(${k.id},'${esc(k.name)}')">删除</button>
+        </div></td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="8" class="muted">还没有 Key，点右上角「新建 Key」</td></tr>';
+    $('#logFilter').innerHTML = '<option value="">全部 Key</option>' +
+      d.keys.map(k=>`<option value="${k.id}">${esc(k.name)}</option>`).join('');
+  }catch(e){ toast(e.message); }
+}
+function mask(t){ return t.slice(0,8) + '····' + t.slice(-4); }
+function copyKey(btn){
+  const t = btn.closest('td').querySelector('[data-tok]').dataset.tok;
+  navigator.clipboard.writeText(t).then(()=>toast('已复制'), ()=>{
+    prompt('请手动复制：', t);
+  });
+}
+function openCreate(){
+  editingId = null;
+  $('#modalTitle').textContent = '新建 Key';
+  $('#modalSave').textContent = '创建';
+  $('#f_name').value=''; $('#f_daily_anlas').value=100;
+  $('#f_image_model_scope').value='legacy';
+  $('#f_daily_v5').value=50; $('#f_monthly_anlas').value=2500;
+  $('#f_daily_text').value=150000; $('#f_rpm').value=10; $('#f_expires').value=30;
+  $('#f_allow_anlas').checked=false; $('#f_allow_img2img').checked=false;
+  $('#f_exclude_global_v5').checked=false;
+  $('#modalErr').textContent=''; $('#modal').style.display='flex';
+}
+function openEdit(id){
+  const k = keysCache.find(x=>x.id===id); if(!k) return;
+  editingId = id;
+  $('#modalTitle').textContent = '编辑：' + k.name;
+  $('#modalSave').textContent = '保存';
+  $('#f_name').value = k.name;
+  $('#f_image_model_scope').value = k.image_model_scope || 'legacy';
+  $('#f_daily_anlas').value = k.daily_anlas;
+  $('#f_daily_v5').value = k.daily_v5;
+  $('#f_monthly_anlas').value = k.monthly_anlas;
+  $('#f_daily_text').value = k.daily_text_tokens;
+  $('#f_rpm').value = k.rpm;
+  $('#f_expires').value = 0;
+  $('#f_allow_anlas').checked = k.allow_anlas;
+  $('#f_allow_img2img').checked = k.allow_img2img;
+  $('#f_exclude_global_v5').checked = k.exclude_global_v5;
+  $('#modalErr').textContent=''; $('#modal').style.display='flex';
+}
+function closeModal(){ $('#modal').style.display='none'; }
+async function saveKey(){
+  const body = {
+    name: $('#f_name').value,
+    image_model_scope: $('#f_image_model_scope').value,
+    daily_anlas: +$('#f_daily_anlas').value,
+    daily_v5: +$('#f_daily_v5').value,
+    monthly_anlas: +$('#f_monthly_anlas').value,
+    daily_text_tokens: +$('#f_daily_text').value,
+    rpm: +$('#f_rpm').value,
+    allow_anlas: $('#f_allow_anlas').checked,
+    allow_img2img: $('#f_allow_img2img').checked,
+    exclude_global_v5: $('#f_exclude_global_v5').checked,
+  };
+  try{
+    if(editingId){
+      body.expires_days = +$('#f_expires').value;
+      await api('/admin/api/keys/'+editingId, {method:'PATCH', body: JSON.stringify(body)});
+      toast('已保存');
+    }else{
+      body.expires_days = +$('#f_expires').value;
+      const d = await api('/admin/api/keys', {method:'POST', body: JSON.stringify(body)});
+      await loadKeys(); closeModal();
+      prompt('请立即复制新 Key（发给用户）：', d.key.token);
+      return;
+    }
+    closeModal(); loadKeys();
+  }catch(e){ $('#modalErr').textContent = e.message; }
+}
+async function toggleKey(id, enabled){
+  await api('/admin/api/keys/'+id, {method:'PATCH', body: JSON.stringify({enabled})}).catch(e=>toast(e.message));
+  loadKeys();
+}
+async function resetDailyImageQuota(id, name){
+  if(!confirm(`确定重置「${name}」今日的 V5 和 Anlas 用量吗？\n图片、文本、请求数及用量日志不会删除。`)) return;
+  try{
+    await api('/admin/api/keys/'+id+'/reset-daily-image-quota', {method:'POST'});
+    toast('已重置「'+name+'」今日的 V5 和 Anlas 用量');
+    loadKeys();
+  }catch(e){ toast(e.message); }
+}
+async function delKey(id, name){
+  if(!confirm(`确定删除 Key「${name}」？该操作不可恢复。`)) return;
+  await api('/admin/api/keys/'+id, {method:'DELETE'}).catch(e=>toast(e.message));
+  loadKeys();
+}
+
+/* ---------- logs ---------- */
+async function loadLogs(){
+  try{
+    const kf = $('#logFilter').value;
+    const d = await api('/admin/api/logs?' + (kf?`key_id=${kf}&`:'') + `page=${logPage}`);
+    logPage = d.page;
+    $('#logBody').innerHTML = d.logs.map(l=>`
+      <tr>
+        <td class="mono">${new Date(l.ts*1000).toLocaleString()}</td>
+        <td>${esc(l.key_name)}</td>
+        <td>${esc(l.kind)}</td>
+        <td class="mono">${esc(l.model)}</td>
+        <td>${l.status==='ok'?'<span class="tag on">ok</span>':l.status==='rejected'?'<span class="tag warn">拒绝</span>':'<span class="tag off">错误</span>'}</td>
+        <td>${l.images||''}</td><td>${l.anlas||''}</td><td>${l.tokens||''}</td>
+        <td class="muted">${esc(l.detail)}</td>
+      </tr>`).join('') || '<tr><td colspan="9" class="muted">暂无记录</td></tr>';
+    $('#logPager').innerHTML = `
+      <span class="muted">共 ${d.total} 条，第 ${d.page} / ${d.pages} 页（每页 ${d.per_page} 条）</span>
+      <button class="btn mini" onclick="changeLogPage(-1)" ${d.page<=1?'disabled':''}>上一页</button>
+      <button class="btn mini" onclick="changeLogPage(1)" ${d.page>=d.pages?'disabled':''}>下一页</button>`;
+  }catch(e){ toast(e.message); }
+}
+function changeLogPage(delta){ logPage=Math.max(1,logPage+delta); loadLogs(); }
+
+/* ---------- settings ---------- */
+async function loadSettings(){
+  try{
+    const [a, s, o] = await Promise.all([
+      api('/admin/api/announcement'), api('/admin/api/settings'), api('/admin/api/overview')]);
+    $('#announce').value = a.html || '';
+    $('#s_budget').value = s.global_monthly_anlas;
+    $('#s_v5').value = s.global_daily_v5;
+    $('#cfgInfo').innerHTML =
+      `上游令牌池：${o.pool_configured ? o.pool.map(p=>esc(p.token)).join(', ') : '未配置（设置 NAI_TOKENS）'}<br>` +
+      `本月 Anlas：${o.month.anlas} / 预算 ${o.anlas_budget>0?o.anlas_budget:'∞'}<br>` +
+      `今日请求：${o.today.requests} ｜ 图片 ${o.today.images} ｜ Anlas ${o.today.anlas}<br>` +
+      `更多配置项见项目 README（SAFE_CLAMP / GLOBAL_CONCURRENCY 等）`;
+  }catch(e){ toast(e.message); }
+}
+async function saveBudget(){
+  const d = await api('/admin/api/settings', {method:'PUT', body: JSON.stringify({
+    global_monthly_anlas: +$('#s_budget').value,
+    global_daily_v5: +$('#s_v5').value,
+  })});
+  toast('已保存：月预算 ' + d.global_monthly_anlas + 'A / V5 日限 ' + d.global_daily_v5);
+}
+async function saveAnnounce(){
+  await api('/admin/api/announcement', {method:'PUT', body: JSON.stringify({html: $('#announce').value})});
+  toast('公告已保存');
+}
+
+boot();
+</script>
+</body>
+</html>
