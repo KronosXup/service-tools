@@ -259,7 +259,7 @@ async function boot(){
 /* ---------- tabs ---------- */
 function tab(name){
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
-  ['ov','keys','logs','images','set'].forEach(t=> $('#tab-'+t).style.display = t===name?'':'none');
+  ['ov','keys','logs','set'].forEach(t=> $('#tab-'+t).style.display = t===name?'':'none');
   if(name==='ov') loadOverview();
   if(name==='keys') loadKeys();
   if(name==='logs') loadLogs();
