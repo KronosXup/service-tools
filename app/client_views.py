@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import time
-from datetime import datetime, timedelta
 
 
 async def subscription_payload(state, key, *, now: float | None = None) -> dict:
@@ -32,9 +31,6 @@ async def subscription_payload(state, key, *, now: float | None = None) -> dict:
                 remaining.append(max(0, global_limit - int(await state.db.day_v5_total(day))))
     v5_limit = min(limits, default=0)
     v5_left = min(remaining, default=0)
-    percent = int(round(v5_left * 100 / v5_limit)) if v5_limit else 100
-    local_now = datetime.fromtimestamp(now, state.tz)
-    tomorrow = (local_now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
 
     return {
         "tier": 3,
@@ -48,10 +44,7 @@ async def subscription_payload(state, key, *, now: float | None = None) -> dict:
             "imageGeneration": True, "unlimitedImageGeneration": False,
             "voiceGeneration": False, "contextTokens": 0,
         },
-        "usage": {
-            "percent": percent, "isNegative": False,
-            "timeUntilNextPercent": max(0, int(tomorrow.timestamp() - now)),
-        },
+        # Local daily quotas use naiGate; official battery usage is unavailable.
         "naiGate": {
             "imageModelScope": "all" if admin else key["image_model_scope"],
             "anlasEnabled": paid,

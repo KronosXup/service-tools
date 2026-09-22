@@ -59,7 +59,9 @@ def test_view_limits_by_current_key_and_shared_v5_without_upstream_account():
         exempt = await subscription_payload(st, st.db.key | {"exclude_global_v5": True})
         assert exhausted["naiGate"]["v5LeftToday"] == 0
         assert exempt["naiGate"]["v5LeftToday"] == 8
-        assert 0 <= first["usage"]["timeUntilNextPercent"] <= 86400
+        # Official clients convert usage into weekly battery images/refill rates.
+        # Local daily quotas must stay in naiGate instead of that optional field.
+        assert all("usage" not in view for view in (first, second, exhausted, exempt))
     asyncio.run(run())
 
 
@@ -88,6 +90,8 @@ def test_compatibility_routes_require_key_and_keep_panel_schema(monkeypatch):
                 response = await client.get(path, headers={"Authorization": "Bearer test-only"})
                 assert response.status_code == 200
                 assert "test-only" not in response.text
+                payload = response.json()
+                assert "usage" not in payload.get("subscription", payload)
             sub = (await client.get(paths[0], headers={"Authorization": "Bearer test-only"})).json()
             gate = sub["naiGate"]
             assert isinstance(gate["anlasEnabled"], bool)

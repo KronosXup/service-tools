@@ -104,6 +104,8 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 > **NAI Launcher v3**：第三方地址填写站点根地址，如 `https://your-domain.example`。支持 Bearer 登录、multipart 生图、GET 标签建议和 SSE 预览。用户视图显示当前 Key 的权限与额度；`GET /queue-status` 显示汇总排队状态。
 
+订阅接口在 `naiGate` 字段中返回本地 V5 日配额，省略表示官方电量的可选 `usage` 字段。
+
 V4.5 精准参考每张参考图、每张输出额外记 5 Anlas；V4/V4.5 Vibe 超过 4 张的部分，每张参考图、每张输出额外记 2 Anlas。编码单独计费；精准参考与 Vibe 二选一。
 
 图片请求串行执行并结算。流式请求排队时断连会取消；发送上游后，即使客户端断连也继续处理结果。
